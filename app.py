@@ -151,31 +151,6 @@ def pause_video():
     else:
         return jsonify({"error": "Invalid file format. Please upload a valid image."}), 400
     
-
-
-
-# New route to get famous icons and their image URLs
-@app.route('/content/v1/global_icons', methods=['GET'])
-def get_famous_icons():
-    try:
-        # Assuming you want to return a list of famous actors and their images
-        famous_icons = []
-
-        # Here, you can modify the logic to fetch the famous actors and their image URLs
-        for actor in actors_data['name']:
-            folder_name = actor.replace(" ", "_")
-            actor_name = actor
-            matched_image_url = f"{request.host_url}dataset_images/{folder_name}/{actor_name.replace(' ', '_')}.jpg"
-
-            famous_icons.append({
-                "name": actor_name,
-                "image_url": matched_image_url
-            })
-
-        return jsonify({"icons": famous_icons})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
     
 
 # http://127.0.0.1:5000/get_recognition?input=partner    
