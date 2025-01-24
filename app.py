@@ -21,7 +21,6 @@ os.makedirs("temp_frames", exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 
-# Load the CSV into a DataFrame for actor details lookup
 actors_data = pd.read_csv(csv_path)
 
 # Create a mapping of folder names to actor names in the CSV
@@ -150,10 +149,7 @@ def pause_video():
             return jsonify({"error": str(e)}), 500
     else:
         return jsonify({"error": "Invalid file format. Please upload a valid image."}), 400
-    
-    
-
-# http://127.0.0.1:5000/get_recognition?input=partner    
+     
 
 @app.route('/get_recognition', methods=['GET'])
 def get_recognition():

@@ -4,7 +4,7 @@ import os
 import time  # Import time module
 
 # Load video
-video_path = r"C:\Users\amar6\Downloads\video_processing\Videos\Partner.mp4"  # Replace with your video path
+video_path = "static/video/Partner.mp4"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
