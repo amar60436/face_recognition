@@ -34,7 +34,6 @@ def allowed_file(filename):
 
 catalog = pd.read_csv("catalog/catalog.csv")
 
-
 @app.route('/')
 def index2():
     return render_template('index.html')
