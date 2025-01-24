@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: row;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .left-container {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .right-container {
+            flex: 1;
+            padding: 20px;
+            background-color: #f8f8f8;
+            border-radius: 10px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        #response {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        #actor-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+        #loading {
+            display: none;
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+        .actor-info {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .actor-info p {
+            margin: 5px 0;
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-container">
+            <h1>Face Recognition</h1>
+            <input type="file" id="imageInput" accept="image/*">
+            <button class="button" id="recognizeButton">Recognize Face</button>
+            <p id="loading">Processing... Please wait.</p>
+            <div class="image-container">
+                <img id="uploaded-image" style="display: none; width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+            </div>
+        </div>
+        <div class="right-container">
+            <h2>Recognized Actor</h2>
+            <img id="actor-image" style="display: none;" />
+            <div id="response"></div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const recognizeButton = document.getElementById('recognizeButton');
+        const responseDiv = document.getElementById('response');
+        const loadingText = document.getElementById('loading');
+        const actorImage = document.getElementById('actor-image');
+        const uploadedImage = document.getElementById('uploaded-image');
+
+        let selectedImage = null;
+
+        imageInput.addEventListener('change', (event) => {
+            selectedImage = event.target.files[0];
+            responseDiv.innerHTML = ''; // Clear previous response
+
+            // Display the uploaded image on the left side
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                uploadedImage.src = e.target.result;
+                uploadedImage.style.display = 'block'; // Show uploaded image
+            };
+            reader.readAsDataURL(selectedImage);
+        });
+
+        recognizeButton.addEventListener('click', () => {
+            if (!selectedImage) {
+                responseDiv.innerHTML = 'Please select an image before clicking recognize.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', selectedImage);
+
+            loadingText.style.display = 'block'; // Show loading
+            responseDiv.innerHTML = ''; // Clear previous response
+
+            fetch('http://localhost:5000/pause', {
+                method: 'POST',
+                body: formData
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    loadingText.style.display = 'none'; // Hide loading
+                    if (data.actors && data.actors.length > 0) {
+                        const actor = data.actors[0];
+
+                        actorImage.style.display = 'block';
+                        actorImage.src = actor.matched_image_url; // Display the actor image
+
+                        responseDiv.innerHTML = `
+                            <div class="actor-info">
+                                <p><strong>Name:</strong> ${actor.name}</p>
+                                <p><strong>Born:</strong> ${actor.born}</p>
+                                <p><strong>Known For:</strong> ${actor.known_for}</p>
+                                <p><strong>Emotion:</strong> ${actor.emotion}</p>
+                                <p><strong>Movies in platform:</strong> ${actor.all_movies_in_platform}</p>
+                            </div>
+                        `;
+                    } else {
+                        responseDiv.innerHTML = 'No actor match found.';
+                    }
+                })
+                .catch((error) => {
+                    loadingText.style.display = 'none'; // Hide loading
+                    responseDiv.innerHTML = `Error: ${error.message}`;
+                });
+        });
+    </script>
+</body>
+</html>

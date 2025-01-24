@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Pause and Actor Recognition</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            overflow: hidden;
+            background: black;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        button, input[type="file"] {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        button:hover, input[type="file"]:hover {
+            background-color: #0056b3;
+        }
+
+        #response {
+            margin-top: 20px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        #loading {
+            display: none;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Actor Recognition</h1>
+    <input type="file" id="videoUpload" accept="video/*">
+    <div class="video-container" id="videoContainer" style="display: none;">
+        <video id="video" controls></video>
+    </div>
+    <button id="pauseButton" style="display: none;">Pause and Recognize</button>
+    <p id="loading">Processing... Please wait.</p>
+    <p id="response"></p>
+
+    <script>
+        const video = document.getElementById('video');
+        const videoContainer = document.getElementById('videoContainer');
+        const videoUpload = document.getElementById('videoUpload');
+        const pauseButton = document.getElementById('pauseButton');
+        const loading = document.getElementById('loading');
+        const response = document.getElementById('response');
+
+        videoUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                video.src = url;
+                videoContainer.style.display = 'block';
+                pauseButton.style.display = 'block';
+            }
+        });
+
+        pauseButton.addEventListener('click', async () => {
+            video.pause();
+            loading.style.display = 'block';
+            response.textContent = '';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const capturedImage = await saveImage(canvas);
+            if (!capturedImage) {
+                response.textContent = 'Failed to save the frame.';
+                loading.style.display = 'none';
+                return;
+            }
+
+            makeApiRequest(capturedImage);
+        });
+
+        async function saveImage(canvas) {
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], 'frame.jpg', { type: 'image/jpeg' });
+                        resolve(file);
+                    } else {
+                        resolve(null);
+                    }
+                }, 'image/jpeg');
+            });
+        }
+
+        function makeApiRequest(imageFile) {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            fetch('/pause', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (data.actors && data.actors.length > 0) {
+                        response.textContent = `Actors: ${data.actors.join(', ')}`;
+                    } else {
+                        response.textContent = 'No actor match found.';
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    response.textContent = `Error: ${error.message}`;
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Emotion Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px; /* Reduced max-width */
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        #loading {
+            display: none;
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+        #emotion-response {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        video {
+            width: 100%;
+            max-width: 320px; /* Reduced max-width */
+            border-radius: 10px;
+        }
+        #capturedImage {
+            width: 100%;
+            max-width: 320px; /* Reduced max-width */
+            border-radius: 10px;
+        }
+        .image-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .retake-button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #ffc107;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .retake-button:hover {
+            background-color: #e0a800;
+        }
+        .camera-and-image {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Live Emotion Detection</h1>
+        <div class="camera-and-image">
+            <video id="video" autoplay></video>
+            <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
+        </div>
+        <div id="emotion-response"></div>
+        <button class="button" id="checkEmotionButton">Check Emotion & Movie Recommendation</button>
+        <p id="loading">Processing... Please wait.</p>
+        <button class="retake-button" id="retakeButton" style="display: none;">Retake Image</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const checkEmotionButton = document.getElementById('checkEmotionButton');
+        const emotionResponseDiv = document.getElementById('emotion-response');
+        const loadingText = document.getElementById('loading');
+        const capturedImageElement = document.getElementById('capturedImage');
+        const retakeButton = document.getElementById('retakeButton');
+        let currentFrame = null;
+
+        // Start video stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch((error) => {
+                alert("Error accessing webcam: " + error.message);
+            });
+
+        // Capture current frame from video
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png');
+        }
+
+        // Convert base64 image to Blob for sending in the form-data
+        function convertBase64ToBlob(base64Data) {
+            const byteCharacters = atob(base64Data.split(',')[1]);
+            const byteArrays = [];
+            for (let offset = 0; offset < byteCharacters.length; offset++) {
+                const byte = byteCharacters.charCodeAt(offset);
+                byteArrays.push(byte);
+            }
+            return new Blob([new Uint8Array(byteArrays)], { type: 'image/png' });
+        }
+
+        // Handle emotion detection request
+        checkEmotionButton.addEventListener('click', () => {
+            currentFrame = captureImage();
+
+            if (!currentFrame) {
+                emotionResponseDiv.innerHTML = 'Error: No image captured from webcam.';
+                return;
+            }
+
+            // Display captured image
+            capturedImageElement.src = currentFrame;
+            capturedImageElement.style.display = 'block';
+            retakeButton.style.display = 'block';
+
+            const formData = new FormData();
+            const imageBlob = convertBase64ToBlob(currentFrame);
+            formData.append('image', imageBlob, 'image.png');
+
+            loadingText.style.display = 'block'; // Show loading
+
+            fetch('http://localhost:5000/detect_emotion', {
+                method: 'POST',
+                body: formData
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    loadingText.style.display = 'none'; // Hide loading
+
+                    if (data.emotion) {
+                        emotionResponseDiv.innerHTML = ` 
+                            <p><strong>Detected Emotion:</strong> ${data.emotion}</p>
+                        `;
+                    } else {
+                        emotionResponseDiv.innerHTML = 'No emotion detected.';
+                    }
+                })
+                .catch((error) => {
+                    loadingText.style.display = 'none'; // Hide loading
+                    emotionResponseDiv.innerHTML = `Error: ${error.message}`;
+                });
+        });
+
+        // Handle retake image
+        retakeButton.addEventListener('click', () => {
+            capturedImageElement.style.display = 'none';
+            retakeButton.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

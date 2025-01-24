@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actor's Face and Emotion Recognition</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .left-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .right-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 20px;
+            background-color: #ffffff;
+            border-left: 2px solid #ccc;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            display: none;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button, input[type="file"] {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            align-self: flex-start;
+        }
+
+        button:hover, input[type="file"]:hover {
+            background-color: #0056b3;
+        }
+
+        #response {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-align: left;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #actor-image {
+            margin-bottom: 20px;
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        #loading {
+            display: none;
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-container">
+        <h1>Real Time Actor's Face and Emotion Recognition</h1>
+        <input type="file" id="videoInput" accept="video/*">
+        <div class="video-container" id="videoContainer">
+            <video id="video" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <button id="pauseButton" style="display: none;">Pause and Recognize</button>
+        <p id="loading">Processing... Please wait.</p>
+    </div>
+    <div class="right-container">
+        <h2>Recognized Actor</h2>
+        <img id="actor-image" style="display: none;" />
+        <div id="response"></div>
+    </div>
+
+    <script>
+        const videoInput = document.getElementById('videoInput');
+        const video = document.getElementById('video');
+        const videoContainer = document.getElementById('videoContainer');
+        const pauseButton = document.getElementById('pauseButton');
+        const loading = document.getElementById('loading');
+        const response = document.getElementById('response');
+        const actorImage = document.getElementById('actor-image');
+
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                video.src = fileURL;
+                videoContainer.style.display = 'block';
+                pauseButton.style.display = 'inline-block';
+                response.innerHTML = '';
+            }
+        });
+
+        pauseButton.addEventListener('click', async () => {
+            video.pause();
+            loading.style.display = 'block';
+            response.innerHTML = '';
+            actorImage.style.display = 'none';  // Hide image while processing
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const capturedImage = await saveImage(canvas);
+            if (!capturedImage) {
+                response.innerHTML = 'Failed to capture the frame.';
+                loading.style.display = 'none';
+                return;
+            }
+
+            makeApiRequest(capturedImage);
+        });
+
+        async function saveImage(canvas) {
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], 'frame.jpg', { type: 'image/jpeg' });
+                        resolve(file);
+                    } else {
+                        resolve(null);
+                    }
+                }, 'image/jpeg');
+            });
+        }
+
+        function makeApiRequest(imageFile) {
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            fetch('/pause', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (data.actors && data.actors.length > 0) {
+                        // Show actor's image just above the name
+                        actorImage.style.display = 'block';
+                        actorImage.src = data.actors[0].matched_image_url;  // Display the image of the first actor
+
+                        response.innerHTML = data.actors.map(actor => `
+                            <div>
+                                <p><strong>Name:</strong> ${actor.name}</p>
+                                <p><strong>Born:</strong> ${actor.born}</p>
+                                <p><strong>Known For:</strong> ${actor.known_for}</p>
+                                <p><strong>Emotion:</strong> ${actor.emotion}</p>
+                                <p><strong>Movies on Platform:</strong> ${actor.all_movies_in_platform.join(', ')}</p> <!-- Added movies list -->
+                            </div>
+                        `).join('');
+                    } else {
+                        response.innerHTML = 'No actor match found.';
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    response.innerHTML = `Error: ${error.message}`;
+                });
+        }
+
+        // Adjust video container based on video aspect ratio
+        video.addEventListener('loadedmetadata', () => {
+            const videoAspectRatio = video.videoWidth / video.videoHeight;
+
+            if (videoAspectRatio < 1) {
+                // Portrait video (aspect ratio < 1)
+                videoContainer.style.maxWidth = '360px';
+                videoContainer.style.aspectRatio = '9 / 16';
+            } else {
+                // Landscape video (aspect ratio >= 1)
+                videoContainer.style.maxWidth = '800px';
+                videoContainer.style.aspectRatio = '16 / 9';
+            }
+        });
+    </script>
+</body>
+</html>

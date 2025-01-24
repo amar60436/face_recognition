@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face and Emotion Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border-radius: 50%;
+        }
+
+        .card p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .card button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .card button:hover {
+            background-color: #45a049;
+        }
+
+        .card input[type="file"] {
+            display: none;
+        }
+
+        .card input[type="file"] + label {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .card input[type="file"] + label:hover {
+            background-color: #0056b3;
+        }
+
+        .card .result {
+            margin-top: 20px;
+        }
+
+        .card .result span {
+            font-weight: bold;
+        }
+
+        #recommendation {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #recommendation h2 {
+            margin-top: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Face and Emotion Recognition</h1>
+
+    <div class="container">
+
+        <!-- 1. Real-Time Face and Emotion Recognition -->
+        <div class="card" onclick="window.location.href='/real_time_face_recognisation'">
+            <!-- <img src="https://via.placeholder.com/100" alt="Real-Time Recognition"> -->
+            <p>Real-Time Face and Emotion Recognition</p>
+            <button>Go</button>
+        </div>
+
+        <!-- 2. Already Face Recognized -->
+        <div class="card" onclick="window.location.href='/get_recognisation'">
+            <!-- <img src="https://via.placeholder.com/100" alt="Face Recognized"> -->
+            <p>Already Face Recognized</p>
+            <button>Go</button>
+            <div class="result">
+                <!-- <span>Status:</span> Face Recognized! -->
+            </div>
+        </div>
+
+        <!-- 3. Upload a Photo -->
+        <div class="card" onclick="window.location.href='/check_actor'" >
+            <!-- <img src="https://via.placeholder.com/100" alt="Upload Photo"> -->
+            <p>Upload a Photo and Recognize face</p>
+            <button>Go</button>
+            <!-- <input type="file" id="file-upload" accept="image/*">
+            <label for="file-upload">Choose Photo</label>
+            <div class="result" id="photo-result">
+                <span>Status:</span> No photo uploaded.
+            </div> -->
+        </div>
+
+        <!-- 4. Personal Live Emotion Detection and Movie Recommendation -->
+        <div class="card" onclick="window.location.href='/live_emotion_detection'" >
+            <!-- <img src="https://via.placeholder.com/100" alt="Live Emotion"> -->
+            <p>Personal Live Emotion Detection and Movie Recommendation</p>
+            <button>Go</button>
+            <!-- <button>Show Recommendation</button> -->
+        </div>
+
+    </div>
+
+    <!-- Movie Recommendation Section -->
+    <div id="recommendation">
+        <h2>Your Movie Recommendations:</h2>
+        <ul>
+            <li>Movie 1</li>
+            <li>Movie 2</li>
+            <li>Movie 3</li>
+            <li>Movie 4</li>
+        </ul>
+    </div>
+
+    <script>
+        // Upload Photo Logic
+        const fileUpload = document.getElementById('file-upload');
+        const photoResult = document.getElementById('photo-result');
+
+        fileUpload.addEventListener('change', function() {
+            const file = fileUpload.files[0];
+            if (file) {
+                photoResult.innerHTML = `<span>Status:</span> Photo uploaded successfully!`;
+            } else {
+                photoResult.innerHTML = `<span>Status:</span> No photo uploaded.`;
+            }
+        });
+
+        // Show Movie Recommendation
+        function showRecommendation() {
+            const recommendationSection = document.getElementById('recommendation');
+            recommendationSection.style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

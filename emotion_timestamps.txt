@@ -1,0 +1,1 @@
+Timestamp (s), Emotion, Time Taken (s)

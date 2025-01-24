@@ -1,0 +1,7 @@
+Flask==2.3.3
+deepface==0.0.93
+opencv-python==4.10.0.84
+Werkzeug==2.3.7
+tf-keras
+# tensorflow==2.18.0
+flask-cors

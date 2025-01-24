@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Actor Recognition</title>
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .video-container video {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .controls-container {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .controls-container button {
+            display: block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+        }
+        .controls-container button:hover {
+            background-color: #0056b3;
+        }
+        .actor-details {
+            font-size: 16px;
+            line-height: 1.5;
+            padding-top: 20px;
+        }
+        .actor-timestamps {
+            margin-left: 20px;
+            font-size: 14px;
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .actor-timestamps li {
+            margin-bottom: 5px;
+        }
+        .actor-timestamps a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .actor-timestamps a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="video-player" controls>
+            <source src="/video/Partner.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <div class="controls-container">
+        <button id="get-actor-btn">Get Actor</button>
+        <div id="actor-details" class="actor-details"></div>
+    </div>
+
+    <script>
+        const getActorBtn = document.getElementById('get-actor-btn');
+        const actorDetailsDiv = document.getElementById('actor-details');
+        const videoPlayer = document.getElementById('video-player');
+
+        getActorBtn.addEventListener('click', async () => {
+            try {
+                // Make API call to the backend
+                const response = await fetch('http://127.0.0.1:5000/get_recognition?input=partner', {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let actorDetailsHtml = '';
+
+                    // Iterate over actors and their timestamps
+                    for (const [actor, timestamps] of Object.entries(data)) {
+                        actorDetailsHtml += `
+                            <p><strong>Actor: ${actor}</strong></p>
+                            <p>Recognized at:</p>
+                            <ul class="actor-timestamps">
+                                ${timestamps
+                                    .map(
+                                        time => `
+                                            <li>
+                                                <a href="#" onclick="seekToTime('${time}')">${time}</a>
+                                            </li>
+                                        `
+                                    )
+                                    .join('')}
+                            </ul>
+                            <hr>
+                        `;
+                    }
+
+                    actorDetailsDiv.innerHTML = actorDetailsHtml;
+                } else {
+                    actorDetailsDiv.innerHTML = '<p>Error fetching actor details.</p>';
+                }
+            } catch (error) {
+                actorDetailsDiv.innerHTML = '<p>Failed to fetch actor details.</p>';
+            }
+        });
+
+        // Function to seek to a specific time in the video
+        function seekToTime(time) {
+            const [minutes, seconds] = time.split(':').map(Number);
+            const totalSeconds = minutes * 60 + seconds;
+
+            videoPlayer.currentTime = totalSeconds; // Set video time
+            videoPlayer.play(); // Play the video
+        }
+    </script>
+</body>
+</html>
