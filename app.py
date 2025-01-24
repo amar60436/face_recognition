@@ -240,9 +240,5 @@ def detect_emotion():
         return jsonify({"error": "Invalid file format. Please upload a valid image."}), 400
 
 
-
-
-
-
 if __name__ == "__main__":
     app.run(debug=True)
